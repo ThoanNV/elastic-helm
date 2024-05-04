@@ -11,6 +11,8 @@ extraEnvs:
     value: "--max-old-space-size=1800"
   - name: TZ
     value: Asia/Ho_Chi_Minh
+  - name: SERVER_PUBLICBASEURL
+    value: "https://kibana-example.local"
 #  - name: MY_ENVIRONMENT_VAR
 #    value: the_value_goes_here
 
