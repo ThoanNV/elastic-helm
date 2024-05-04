@@ -79,7 +79,14 @@ healthCheckPath: "/app/kibana"
 
 # Allows you to add any config files in /usr/share/kibana/config/
 # such as kibana.yml
-kibanaConfig: {}
+kibanaConfig:
+  kibana.yml: |
+    server.host: "0.0.0.0"
+    server.shutdownTimeout: "5s"
+    elasticsearch.hosts: [ "https://elasticsearch-master:9200" ]
+    monitoring.ui.container.elasticsearch.enabled: true
+    logging.root.level: error
+    logging.quiet: true
 #   kibana.yml: |
 #     key:
 #       nestedkey: value
@@ -158,7 +165,8 @@ ingress:
   enabled: true
   className: "nginx"
   pathtype: ImplementationSpecific
-  annotations: {}
+  annotations:
+    nginx.ingress.kubernetes.io/enable-access-log: 'false'
   # kubernetes.io/ingress.class: nginx
   # kubernetes.io/tls-acme: "true"
   hosts:
