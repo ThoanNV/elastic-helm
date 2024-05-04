@@ -9,6 +9,8 @@ replicas: 1
 extraEnvs:
   - name: "NODE_OPTIONS"
     value: "--max-old-space-size=1800"
+  - name: TZ
+    value: Asia/Ho_Chi_Minh
 #  - name: MY_ENVIRONMENT_VAR
 #    value: the_value_goes_here
 
@@ -35,7 +37,7 @@ hostAliases: []
 #  - "bar.local"
 
 image: "docker.elastic.co/kibana/kibana"
-imageTag: "7.17.3"
+imageTag: "7.17.21"
 imagePullPolicy: "IfNotPresent"
 
 # additionals labels
@@ -70,15 +72,20 @@ kibanaConfig: {}
 # If Pod Security Policy in use it may be required to specify security context as well as service account
 
 podSecurityContext:
+  runAsUser: 1000
   fsGroup: 1000
 
 securityContext:
   capabilities:
     drop:
       - ALL
-  # readOnlyRootFilesystem: true
+  seccompProfile:
+    type: RuntimeDefault
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
   runAsNonRoot: true
   runAsUser: 1000
+  runAsGroup: 1000
 
 serviceAccount: ""
 
@@ -135,7 +142,7 @@ service:
   httpPortName: http
 
 ingress:
-  enabled: false
+  enabled: true
   className: "nginx"
   pathtype: ImplementationSpecific
   annotations: {}
@@ -145,10 +152,10 @@ ingress:
     - host: kibana-example.local
       paths:
         - path: /
-  #tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+  tls:
+    - secretName: chart-example-tls
+      hosts:
+        - chart-example.local
 
 readinessProbe:
   failureThreshold: 3

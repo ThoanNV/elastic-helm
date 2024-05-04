@@ -12,8 +12,8 @@ roles:
   master: "true"
   ingest: "true"
   data: "true"
-  remote_cluster_client: "true"
-  ml: "true"
+  remote_cluster_client: "false"
+  ml: "false"
 
 replicas: 3
 minimumMasterNodes: 2
@@ -38,9 +38,9 @@ esJvmOptions: {}
 # Extra environment variables to append to this nodeGroup
 # This will be appended to the current 'env:' key. You can use any of the kubernetes env
 # syntax here
-extraEnvs: []
-#  - name: MY_ENVIRONMENT_VAR
-#    value: the_value_goes_here
+extraEnvs:
+  - name: TZ
+    value: Asia/Ho_Chi_Minh
 
 # Allows you to load environment variables from kubernetes secret or config map
 envFrom: []
@@ -65,7 +65,7 @@ hostAliases: []
 #  - "bar.local"
 
 image: "docker.elastic.co/elasticsearch/elasticsearch"
-imageTag: "7.17.3"
+imageTag: "7.17.21"
 imagePullPolicy: "IfNotPresent"
 
 podAnnotations:
@@ -75,7 +75,7 @@ podAnnotations:
 # additionals labels
 labels: {}
 
-esJavaOpts: "" # example: "-Xmx1g -Xms1g"
+esJavaOpts: "-Dlog4j2.formatMsgNoLookups=true" # example: "-Xmx1g -Xms1g"
 
 resources:
   requests:
@@ -210,16 +210,22 @@ updateStrategy: RollingUpdate
 maxUnavailable: 1
 
 podSecurityContext:
-  fsGroup: 1000
   runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: "OnRootMismatch"
 
 securityContext:
   capabilities:
     drop:
       - ALL
-  # readOnlyRootFilesystem: true
+  seccompProfile:
+    type: RuntimeDefault
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
   runAsNonRoot: true
   runAsUser: 1000
+  runAsGroup: 1000
 
 # How long to wait for elasticsearch to stop gracefully
 terminationGracePeriod: 120
@@ -248,7 +254,7 @@ tolerations: []
 # Enabling this will publicly expose your Elasticsearch instance.
 # Only enable this if you have security enabled on your cluster
 ingress:
-  enabled: false
+  enabled: true
   annotations: {}
   # kubernetes.io/ingress.class: nginx
   # kubernetes.io/tls-acme: "true"
@@ -258,10 +264,10 @@ ingress:
     - host: chart-example.local
       paths:
         - path: /
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+  tls:
+    - secretName: chart-example-tls
+      hosts:
+        - chart-example.local
 
 nameOverride: ""
 fullnameOverride: ""
@@ -289,7 +295,7 @@ lifecycle:
   #         curl -XPUT "$ES_URL/_template/$TEMPLATE_NAME" -H 'Content-Type: application/json' -d'{"index_patterns":['\""$INDEX_PATTERN"\"'],"settings":{"number_of_shards":'$SHARD_COUNT',"number_of_replicas":'$REPLICA_COUNT'}}'
 
 sysctlInitContainer:
-  enabled: true
+  enabled: false
 
 keystore: []
 

@@ -37,8 +37,8 @@ the Elastic products, so if a chart for the latest patch version doesn't exist,
 you can use the latest chart with the same **MAJOR.MINOR** version and override
 the Docker image tag to the latest patch version with the `imageTag` value.
 
-For example, if you want to deploy an Elasticsearch `7.17.5` cluster, use the
-corresponding `7.17.3` [tag][elasticsearch-7173], with `imageTag=7.17.5` value.
+For example, if you want to deploy an Elasticsearch `7.17.22` cluster, use the
+corresponding `7.17.21` [tag][elasticsearch-7173], with `imageTag=7.17.22` value.
 
 The `master` version of these charts is intended to support the latest
 pre-release versions of our products, and therefore may or may not work with
@@ -77,7 +77,7 @@ Kubernetes. There is a dedicated Helm chart for ECK which can be found
 [eck-chart]: https://github.com/elastic/cloud-on-k8s/tree/master/deploy
 [elastic cloud on kubernetes]: https://github.com/elastic/cloud-on-k8s
 [elastic helm repo]: https://helm.elastic.co
-[elasticsearch-7173]: https://github.com/elastic/helm-charts/tree/7.17.3/elasticsearch/
+[elasticsearch-7173]: https://github.com/elastic/helm-charts/tree/7.17.21/elasticsearch/
 [elasticsearch-771]: https://github.com/elastic/helm-charts/tree/7.7.1/elasticsearch/
 [github releases]: https://github.com/elastic/helm-charts/releases
 [helm-tester Dockerfile]: https://github.com/elastic/helm-charts/blob/7.17/helpers/helm-tester/Dockerfile
