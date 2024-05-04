@@ -45,10 +45,10 @@ def test_defaults():
         {"name": "discovery.seed_hosts", "value": uname + "-headless"},
         {"name": "network.host", "value": "0.0.0.0"},
         {"name": "cluster.name", "value": clusterName},
-        {"name": "cluster.deprecation_indexing.enabled", "value": "false"},
-        {"name": "node.master", "value": "true"},
-        {"name": "node.data", "value": "true"},
-        {"name": "node.ingest", "value": "true"},
+        {
+            "name": "node.roles",
+            "value": "master,data,data_content,data_hot,data_warm,data_cold,ingest,ml,remote_cluster_client,transform,",
+        },
     ]
 
     c = r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0]
@@ -72,7 +72,7 @@ def test_defaults():
     assert c["readinessProbe"]["timeoutSeconds"] == 5
 
     assert "curl" in c["readinessProbe"]["exec"]["command"][-1]
-    assert "http://127.0.0.1:9200" in c["readinessProbe"]["exec"]["command"][-1]
+    assert "https://127.0.0.1:9200" in c["readinessProbe"]["exec"]["command"][-1]
 
     # Resources
     assert c["resources"] == {
@@ -173,55 +173,10 @@ imageTag: 6.2.4
     )
 
 
-def test_set_discovery_hosts_to_custom_master_service():
+def test_set_initial_master_nodes():
     config = """
-esMajorVersion: 6
-masterService: "elasticsearch-custommaster"
-"""
-    r = helm_template(config)
-    env = r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0]["env"]
-    assert {
-        "name": "discovery.zen.ping.unicast.hosts",
-        "value": "elasticsearch-custommaster-headless",
-    } in env
-
-
-def test_set_master_service_to_default_nodegroup_name_if_not_set():
-    config = """
-esMajorVersion: 6
-nodeGroup: "data"
-"""
-    r = helm_template(config)
-    env = r["statefulset"]["elasticsearch-data"]["spec"]["template"]["spec"][
-        "containers"
-    ][0]["env"]
-    assert {
-        "name": "discovery.zen.ping.unicast.hosts",
-        "value": "elasticsearch-master-headless",
-    } in env
-
-
-def test_set_master_service_to_default_nodegroup_name_with_custom_cluster_name():
-    config = """
-esMajorVersion: 6
-clusterName: "custom"
-nodeGroup: "data"
-"""
-    r = helm_template(config)
-    env = r["statefulset"]["custom-data"]["spec"]["template"]["spec"]["containers"][0][
-        "env"
-    ]
-    assert {
-        "name": "discovery.zen.ping.unicast.hosts",
-        "value": "custom-master-headless",
-    } in env
-
-
-def test_set_initial_master_nodes_when_using_v_7():
-    config = """
-esMajorVersion: 7
 roles:
-  master: "true"
+  - master
 """
     r = helm_template(config)
     env = r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0]["env"]
@@ -236,11 +191,10 @@ roles:
         assert e["name"] != "discovery.zen.minimum_master_nodes"
 
 
-def test_dont_set_initial_master_nodes_if_not_master_when_using_es_version_7():
+def test_dont_set_initial_master_nodes_if_not_master():
     config = """
-esMajorVersion: 7
 roles:
-  master: "false"
+  - data
 """
     r = helm_template(config)
     env = r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0]["env"]
@@ -248,11 +202,10 @@ roles:
         assert e["name"] != "cluster.initial_master_nodes"
 
 
-def test_set_discovery_seed_host_when_using_v_7():
+def test_set_discovery_seed_host():
     config = """
-esMajorVersion: 7
 roles:
-  master: "true"
+  - master
 """
     r = helm_template(config)
     env = r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0]["env"]
@@ -263,17 +216,6 @@ roles:
 
     for e in env:
         assert e["name"] != "discovery.zen.ping.unicast.hosts"
-
-
-def test_enabling_machine_learning_role():
-    config = """
-roles:
-  ml: "true"
-"""
-    r = helm_template(config)
-    env = r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0]["env"]
-
-    assert {"name": "node.ml", "value": "true"} in env
 
 
 def test_adding_extra_env_vars():
@@ -510,9 +452,10 @@ secretMounts:
         "mountPath": "/usr/share/elasticsearch/config/certs",
         "name": "elastic-certificates",
     }
-    assert s["volumes"] == [
-        {"name": "elastic-certificates", "secret": {"secretName": "elastic-certs"}}
-    ]
+    assert {
+        "name": "elastic-certificates",
+        "secret": {"secretName": "elastic-certs"},
+    } in s["volumes"]
 
 
 def test_adding_a_secret_mount_with_subpath():
@@ -864,12 +807,12 @@ persistence:
 """
     r = helm_template(config)
     assert "volumeClaimTemplates" not in r["statefulset"][uname]["spec"]
-    assert (
-        r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0][
-            "volumeMounts"
-        ]
-        == None
-    )
+    assert {
+        "name": "elasticsearch-master",
+        "mountPath": "/usr/share/elasticsearch/data",
+    } not in r["statefulset"][uname]["spec"]["template"]["spec"]["containers"][0][
+        "volumeMounts"
+    ]
 
 
 def test_priority_class_name():
@@ -1062,41 +1005,32 @@ def test_esMajorVersion_detect_default_version():
     config = ""
 
     r = helm_template(config)
-    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "7"
+    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "8"
 
 
-def test_esMajorVersion_default_to_7_if_not_elastic_image():
+def test_esMajorVersion_default_to_8_if_not_elastic_image():
     config = """
     image: notElastic
     imageTag: 1.0.0
     """
 
     r = helm_template(config)
-    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "7"
+    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "8"
 
 
-def test_esMajorVersion_default_to_7_if_no_version_is_found():
+def test_esMajorVersion_default_to_8_if_no_version_is_found():
     config = """
     imageTag: not_a_number
     """
 
     r = helm_template(config)
-    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "7"
-
-
-def test_esMajorVersion_set_to_6_based_on_image_tag():
-    config = """
-    imageTag: 6.8.1
-    """
-
-    r = helm_template(config)
-    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "6"
+    assert r["statefulset"][uname]["metadata"]["annotations"]["esMajorVersion"] == "8"
 
 
 def test_esMajorVersion_always_wins():
     config = """
     esMajorVersion: 7
-    imageTag: 6.0.0
+    imageTag: 8.0.0
     """
 
     r = helm_template(config)
@@ -1196,13 +1130,6 @@ labels:
 
 
 def test_keystore_enable():
-    config = ""
-
-    r = helm_template(config)
-    s = r["statefulset"][uname]["spec"]["template"]["spec"]
-
-    assert s["volumes"] == None
-
     config = """
 keystore:
   - secretName: test
@@ -1575,13 +1502,3 @@ rbac:
         ]
         == False
     )
-
-
-def test_enable_deprecation_indexing():
-    config = """
-clusterDeprecationIndexing: "true"
-"""
-    r = helm_template(config)
-    assert {"name": "cluster.deprecation_indexing.enabled", "value": "true"} in r[
-        "statefulset"
-    ][uname]["spec"]["template"]["spec"]["containers"][0]["env"]

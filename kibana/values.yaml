@@ -1,7 +1,10 @@
 ---
-elasticsearchHosts: "http://elasticsearch-master:9200"
+elasticsearchHosts: "https://elasticsearch-master:9200"
+elasticsearchCertificateSecret: elasticsearch-master-certs
+elasticsearchCertificateAuthoritiesFile: ca.crt
+elasticsearchCredentialSecret: elasticsearch-master-credentials
 
-replicas: 1
+replicas: 2
 
 # Extra environment variables to append to this nodeGroup
 # This will be appended to the current 'env:' key. You can use any of the kubernetes env
@@ -39,7 +42,7 @@ hostAliases: []
 #  - "bar.local"
 
 image: "docker.elastic.co/kibana/kibana"
-imageTag: "7.17.21"
+imageTag: "8.5.1"
 imagePullPolicy: "IfNotPresent"
 
 # additionals labels
@@ -55,8 +58,8 @@ resources:
     cpu: "1000m"
     memory: "2Gi"
   limits:
-    cpu: "1000m"
-    memory: "2Gi"
+    cpu: "500m"
+    memory: "1Gi"
 
 protocol: http
 
@@ -131,16 +134,14 @@ service:
   port: 5601
   nodePort: ""
   labels: {}
-  annotations:
-    {}
-    # cloud.google.com/load-balancer-type: "Internal"
-    # service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
-    # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-    # service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
-    # service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
-  loadBalancerSourceRanges:
-    []
-    # 0.0.0.0/0
+  annotations: {}
+  # cloud.google.com/load-balancer-type: "Internal"
+  # service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+  # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  # service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
+  # service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
+  loadBalancerSourceRanges: []
+  # 0.0.0.0/0
   httpPortName: http
 
 ingress:
@@ -174,14 +175,10 @@ affinity: {}
 nameOverride: ""
 fullnameOverride: ""
 
-lifecycle:
-  {}
-  # preStop:
-  #   exec:
-  #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
-  # postStart:
-  #   exec:
-  #     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
-
-# Deprecated - use only with versions < 6.6
-elasticsearchURL: "" # "http://elasticsearch-master:9200"
+lifecycle: {}
+# preStop:
+#   exec:
+#     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
+# postStart:
+#   exec:
+#     command: ["/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message"]
